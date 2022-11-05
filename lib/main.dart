@@ -296,20 +296,37 @@ class _UserListState extends State<UserList> {
                                 const Size.fromHeight(40)),
                           ),
                           onPressed: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => UserDetails(
-                                        id: int.parse(id),
-                                        name: name,
-                                        age: age.text,
-                                        atype: atype,
-                                        gender: genderRadioBtnVal)));
+                            if (age.text == "") {
+                              const snackBar = SnackBar(
+                                backgroundColor: Color(0xffef4444),
+                                content: Text(
+                                  'Please Enter the age',
+                                  textScaleFactor: 1,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 18),
+                                ),
+                              );
+
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(snackBar);
+                            } else {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => UserDetails(
+                                          id: int.parse(id),
+                                          name: name,
+                                          age: age.text,
+                                          atype: atype,
+                                          gender: genderRadioBtnVal)));
+                            }
                           },
                           child: const Text(
                             "Done",
                             textAlign: TextAlign.center,
+                            textScaleFactor: 1,
                             style: TextStyle(color: Colors.white, fontSize: 18),
                           ),
                         ),
@@ -422,7 +439,6 @@ class _UserDetailsState extends State<UserDetails> {
             ),
             SizedBox(
               width: 120,
-            
               child: ElevatedButton(
                 style: ButtonStyle(
                   elevation: MaterialStateProperty.all(2),

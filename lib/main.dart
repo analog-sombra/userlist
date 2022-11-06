@@ -1,11 +1,24 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:userlist/user.dart';
 
-void main() {
+late Box user;
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Hive.initFlutter();
+    Hive.registerAdapter(UserDataAdapter());
+    user = await Hive.openBox("user");
+  } catch (e) {
+    log(e.toString());
+  }
   runApp(const MyApp());
 }
 
@@ -36,16 +49,37 @@ class UserList extends StatefulWidget {
 class _UserListState extends State<UserList> {
   List users = [];
   void init() async {
-    try {
-      final String response =
-          await rootBundle.loadString('assets/data/userdata.json');
-      final data = await json.decode(response);
-      setState(() {
-        users = data[0]["users"];
-      });
-    } catch (e) {
-      log(e.toString());
+    final String response =
+        await rootBundle.loadString('assets/data/userdata.json');
+    final data = await json.decode(response);
+    setState(() {
+      users = data[0]["users"];
+    });
+
+    if (user.get("user") != null) {
+      UserData userdata = user.get("user");
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: ((context) => UserDetails(
+                id: int.parse(userdata.id),
+                name: userdata.name,
+                age: userdata.age,
+                atype: userdata.atype,
+                gender: userdata.gender,
+              )),
+        ),
+      );
     }
+
+    // try {
+    //   UserData userdata = user.get("user");
+    //   log(userdata.id.toString());
+    //   log(userdata.name.toString());
+    //   log(userdata.age.toString());
+    // } catch (e) {
+    //   log(e.toString());
+    // }
   }
 
   @override
@@ -312,15 +346,27 @@ class _UserListState extends State<UserList> {
                               ScaffoldMessenger.of(context)
                                   .showSnackBar(snackBar);
                             } else {
+                              user.put(
+                                  "user",
+                                  UserData(
+                                    id: id,
+                                    name: name,
+                                    age: age.text,
+                                    atype: atype,
+                                    gender: genderRadioBtnVal,
+                                  ));
+
+                              Navigator.pop(context);
                               Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                       builder: (context) => UserDetails(
-                                          id: int.parse(id),
-                                          name: name,
-                                          age: age.text,
-                                          atype: atype,
-                                          gender: genderRadioBtnVal)));
+                                            id: int.parse(id),
+                                            name: name,
+                                            age: age.text,
+                                            atype: atype,
+                                            gender: genderRadioBtnVal,
+                                          )));
                             }
                           },
                           child: const Text(
@@ -349,13 +395,15 @@ class UserDetails extends StatefulWidget {
   final String age;
   final String gender;
   final String atype;
-  const UserDetails(
-      {super.key,
-      required this.id,
-      required this.name,
-      required this.age,
-      required this.atype,
-      required this.gender});
+
+  const UserDetails({
+    super.key,
+    required this.id,
+    required this.name,
+    required this.age,
+    required this.atype,
+    required this.gender,
+  });
 
   @override
   State<UserDetails> createState() => _UserDetailsState();
@@ -451,7 +499,8 @@ class _UserDetailsState extends State<UserDetails> {
                   minimumSize:
                       MaterialStateProperty.all(const Size.fromHeight(40)),
                 ),
-                onPressed: () {
+                onPressed: () async {
+                  await user.delete("user");
                   Navigator.pop(context);
                 },
                 child: const Text(
